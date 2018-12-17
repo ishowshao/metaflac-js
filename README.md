@@ -1,4 +1,4 @@
 # flac-meta-writer
-Nodejs metadata writer for flac with pure JS.
+Pure JS library for writing flac metadata.
 
-I'm doing, need some days.
+I'm doing, need a few days.
