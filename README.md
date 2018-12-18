@@ -1,4 +1,5 @@
 # metaflac-js
-Pure JS library for writing flac metadata.
+
+A pure JavaScript implementation of the metaflac(official FLAC tools)
 
 I'm doing, need a few days.
