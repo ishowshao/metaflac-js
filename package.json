@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "A pure JavaScript implementation of the metaflac (official FLAC tool)",
   "main": "index.js",
+  "bin": {
+    "metaflac-js": "cli.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -1,4 +1,5 @@
 const fs = require('fs');
+const formatVorbisComment = require('./lib/formatVorbisComment');
 
 const BLOCK_TYPE = {
     0: 'STREAMINFO',
@@ -10,33 +11,11 @@ const BLOCK_TYPE = {
     6: 'PICTURE',
 };
 
-function formatVorbisComment(vendorString, commentList) {
-    const bufferArray = [];
-    const vendorStringBuffer = Buffer.from(vendorString, 'utf8');
-    const vendorLengthBuffer = Buffer.alloc(4);
-    vendorLengthBuffer.writeUInt32LE(vendorStringBuffer.length);
-    
-    const userCommentListLengthBuffer = Buffer.alloc(4);
-    userCommentListLengthBuffer.writeUInt32LE(commentList.length);
-
-    bufferArray.push(vendorLengthBuffer, vendorStringBuffer, userCommentListLengthBuffer);
-
-    for (let i = 0; i < commentList.length; i++) {
-        const comment = commentList[i];
-        const commentBuffer = Buffer.from(comment, 'utf8');
-        const lengthBuffer = Buffer.alloc(4);
-        lengthBuffer.writeUInt32LE(commentBuffer.length);
-        bufferArray.push(lengthBuffer, commentBuffer);
-    }
-
-    return Buffer.concat(bufferArray);
-}
-
-class FlacMetaWriter {
+class Metaflac {
     constructor(flac) {
         this.flac = flac;
         if (typeof this.flac !== 'string' && !Buffer.isBuffer(this.flac)) {
-            throw new Error('Param flac must be string or buffer.');
+            throw new Error('Metaflac(flac) flac must be string or buffer.');
         }
         this.init();
     }
@@ -130,4 +109,4 @@ class FlacMetaWriter {
     }
 }
 
-const writer = new FlacMetaWriter('2.flac');
+module.exports = Metaflac;
