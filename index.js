@@ -46,14 +46,44 @@ while (blockType < 128) {
 
 const vendorLength = vorbisCommentContent.readUInt32LE(0);
 console.log('Vendor length: %d', vendorLength);
-const vendorString = vorbisCommentContent.slice(1, vendorLength);
-console.log('Vendor string: %s', vendorString.toString('utf8'));
+const vendorString = vorbisCommentContent.slice(4, vendorLength + 4).toString('utf8');
+console.log('Vendor string: %s', vendorString);
 const userCommentListLength = vorbisCommentContent.readUInt32LE(4 + vendorLength);
 console.log('user_comment_list_length: %d', userCommentListLength);
 const userCommentListBuffer = vorbisCommentContent.slice(4 + vendorLength + 4);
+const comments = [];
 for (let offset = 0; offset < userCommentListBuffer.length; ) {
     const length = userCommentListBuffer.readUInt32LE(offset);
     offset += 4;
-    const comment = userCommentListBuffer.slice(offset, offset += length);
-    console.log('Comment length: %d, content: %s', length, comment.toString('utf8'));
+    const comment = userCommentListBuffer.slice(offset, offset += length).toString('utf8');
+    console.log('Comment length: %d, content: %s', length, comment);
+    comments.push(comment);
+}
+
+console.log(vendorString, comments);
+
+
+const formated = formatVorbisComment(vendorString, comments);
+console.log(vorbisCommentContent.equals(formated));
+
+function formatVorbisComment(vendorString, commentList) {
+    const bufferArray = [];
+    const vendorStringBuffer = Buffer.from(vendorString, 'utf8');
+    const vendorLengthBuffer = Buffer.alloc(4);
+    vendorLengthBuffer.writeUInt32LE(vendorStringBuffer.length);
+    
+    const userCommentListLengthBuffer = Buffer.alloc(4);
+    userCommentListLengthBuffer.writeUInt32LE(commentList.length);
+
+    bufferArray.push(vendorLengthBuffer, vendorStringBuffer, userCommentListLengthBuffer);
+
+    for (let i = 0; i < commentList.length; i++) {
+        const comment = commentList[i];
+        const commentBuffer = Buffer.from(comment, 'utf8');
+        const lengthBuffer = Buffer.alloc(4);
+        lengthBuffer.writeUInt32LE(commentBuffer.length);
+        bufferArray.push(lengthBuffer, commentBuffer);
+    }
+
+    return Buffer.concat(bufferArray);
 }
