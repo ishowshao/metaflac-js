@@ -26,6 +26,7 @@ class Metaflac {
         } else {
             this.buffer = flac;
         }
+        this.pictureBlocks = [];
 
         const content = this.buffer;
         let offset = 0;
@@ -51,6 +52,9 @@ class Metaflac {
                 vorbisCommentContent = Buffer.alloc(blockLength);
                 content.copy(vorbisCommentContent, 0, offset, offset + blockLength);
             }
+            if (blockType === 6) {
+                this.parsePictureBlock(offset, blockLength);
+            }
             console.log('Block Length: %d', blockLength);
             offset += blockLength;
         }
@@ -75,6 +79,46 @@ class Metaflac {
         
         // const formated = formatVorbisComment(vendorString, comments);
         // console.log(vorbisCommentContent.equals(formated));
+    }
+
+    parsePictureBlock(offset, length) {
+        const picture = this.buffer.slice(offset, offset + length);
+        console.log(picture.length);
+        offset = 0;
+        const pictureType = picture.readUInt32BE(offset);
+        console.log('Picture type: %d', pictureType);
+        offset += 4;
+        const mimeTypeLength = picture.readUInt32BE(offset);
+        console.log('Mime type length: %d', mimeTypeLength);
+        offset += 4;
+        const mimeType = picture.slice(offset, offset + mimeTypeLength).toString('ascii');
+        console.log('MIME: %s', mimeType);
+        offset += mimeTypeLength;
+        const descriptionLength = picture.readUInt32BE(offset);
+        offset += 4;
+        console.log('The length of the description string: %d', descriptionLength);
+        const description = picture.slice(offset, offset += descriptionLength).toString('utf8');
+        console.log('The description of the picture: %s', description);
+
+        const width = picture.readUInt32BE(offset);
+        offset += 4;
+        console.log('The width of the picture in pixels: %d', width);
+
+        const height = picture.readUInt32BE(offset);
+        offset += 4;
+        console.log('The height of the picture in pixels: %d', height);
+        
+        const depth = picture.readUInt32BE(offset);
+        offset += 4;
+        console.log('The color depth of the picture in bits-per-pixel: %d', depth);
+
+        const colors = picture.readUInt32BE(offset);
+        offset += 4;
+        console.log('Colors: %d', colors);
+
+        const pictureDataLength = picture.readUInt32BE(offset);
+        offset += 4;
+        console.log('The length of the picture data in bytes: %d', pictureDataLength);
     }
 
     /**
