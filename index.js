@@ -122,10 +122,107 @@ class Metaflac {
     }
 
     /**
+     * Get the MD5 signature from the STREAMINFO block.
+     */
+    getMd5sum() {
+
+    }
+
+    /**
+     * Get the minimum block size from the STREAMINFO block.
+     */
+    getMinBlocksize() {
+
+    }
+
+    /**
+     * Get the maximum block size from the STREAMINFO block.
+     */
+    getMaxBlocksize() {
+
+    }
+
+    /**
+     * Get the minimum frame size from the STREAMINFO block.
+     */
+    getMinFramesize() {
+
+    }
+
+    /**
+     * Get the maximum frame size from the STREAMINFO block.
+     */
+    getMaxFramesize() {
+
+    }
+
+    /**
+     * Get the sample rate from the STREAMINFO block.
+     */
+    getSampleRate() {
+
+    }
+
+    /**
+     * Get the number of channels from the STREAMINFO block.
+     */
+    getChannels() {
+
+    }
+
+    /**
+     * Get the # of bits per sample from the STREAMINFO block.
+     */
+    getBps() {
+
+    }
+
+    /**
+     * Get the total # of samples from the STREAMINFO block.
+     */
+    getTotalSamples() {
+
+    }
+
+    /**
      * Show the vendor string from the VORBIS_COMMENT block.
      */
     getVendorTag() {
         return this.vendorString;
+    }
+
+    /**
+     * Get all tags where the the field name matches NAME.
+     * 
+     * @param {string} name 
+     */
+    getTag(name) {
+
+    }
+
+    /**
+     * Remove all tags whose field name is NAME.
+     * 
+     * @param {string} name 
+     */
+    removeTag(name) {
+
+    }
+
+    /**
+     * Remove first tag whose field name is NAME.
+     * 
+     * @param {string} name 
+     */
+    removeFirstTag(name) {
+
+    }
+
+    /**
+     * Remove all tags, leaving only the vendor string.
+     */
+    removeAllTags() {
+
     }
 
     /**
@@ -139,9 +236,49 @@ class Metaflac {
     }
 
     /**
-     * Remove all tags, leaving only the vendor string.
+     * Like setTag, except the VALUE is a filename whose contents will be read verbatim to set the tag value.
+     * 
+     * @param {string} field 
      */
-    removeAllTags() {
+    setTagFromFile(field) {
+
+    }
+
+    /**
+     * Import tags from a file.
+     * Each line should be of the form NAME=VALUE.
+     * 
+     * @param {string} filename
+     */
+    importTagsFrom(filename) {
+
+    }
+
+    /**
+     * Export tags to a file.
+     * Each line will be of the form NAME=VALUE.
+     * 
+     * @param {string} filename
+     */
+    exportTagsTo(filename) {
+
+    }
+
+    /**
+     * Import a picture and store it in a PICTURE metadata block.
+     * 
+     * @param {string} filename 
+     */
+    importPictureFrom(filename) {
+
+    }
+
+    /**
+     * Export PICTURE block to a file.
+     * 
+     * @param {string} filename 
+     */
+    exportPictureTo(filename) {
 
     }
 
