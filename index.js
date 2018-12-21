@@ -42,7 +42,7 @@ class Metaflac {
         let offset = 0;
         const markerBuffer = content.slice(0, offset += 4);
         const marker = markerBuffer.toString('ascii');
-        console.log('Marker: %s', marker);
+        // console.log('Marker: %s', marker);
         
         if (marker !== 'fLaC') {
             throw new Error('Input file/buffer is not flac format.');
@@ -50,16 +50,21 @@ class Metaflac {
         
         let vorbisCommentOffset = 0;
         let vorbisCommentContent = null;
+
         let blockType = 0;
-        while (blockType < 128) {
+        let isLastBlock = false;
+        while (!isLastBlock) {
             blockType = content.readUInt8(offset++);
-            // console.log('Block Type: %s', BLOCK_TYPE[blockType % 128]);
+            isLastBlock = blockType > 128;
+            blockType = blockType % 128;
+            // console.log('Block Type: %d %s', blockType, BLOCK_TYPE[blockType]);
         
             const blockLength = content.readUIntBE(offset, 3);
             offset += 3;
 
             if (blockType === STREAMINFO) {
                 this.streamInfo = content.slice(offset, offset + blockLength);
+                // console.log(this.streamInfo);
             }
 
             if (blockType === 4) {
@@ -90,7 +95,7 @@ class Metaflac {
             this.commentList.push(comment);
         }
         
-        console.log(this.vendorString, this.commentList);
+        // console.log(this.vendorString, this.commentList);
         
         // const formated = formatVorbisComment(vendorString, comments);
         // console.log(vorbisCommentContent.equals(formated));
@@ -98,7 +103,7 @@ class Metaflac {
 
     parsePictureBlock(offset, length) {
         const picture = this.buffer.slice(offset, offset + length);
-        console.log(picture.length);
+        // console.log(picture.length);
         offset = 0;
         const pictureType = picture.readUInt32BE(offset);
         // console.log('Picture type: %d', pictureType);
@@ -140,7 +145,7 @@ class Metaflac {
      * Get the MD5 signature from the STREAMINFO block.
      */
     getMd5sum() {
-
+        return this.streamInfo.slice(18, 34).toString('hex');
     }
 
     /**
