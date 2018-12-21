@@ -11,12 +11,22 @@ const BLOCK_TYPE = {
     6: 'PICTURE',
 };
 
+const STREAMINFO = 0;
+const PADDING = 1;
+const APPLICATION = 2;
+const SEEKTABLE = 3;
+const VORBIS_COMMENT = 4;
+const CUESHEET = 5;
+const PICTURE = 6;
+
 class Metaflac {
     constructor(flac) {
         this.flac = flac;
         if (typeof this.flac !== 'string' && !Buffer.isBuffer(this.flac)) {
             throw new Error('Metaflac(flac) flac must be string or buffer.');
         }
+
+        this.streamInfo = null;
         this.init();
     }
 
@@ -43,10 +53,15 @@ class Metaflac {
         let blockType = 0;
         while (blockType < 128) {
             blockType = content.readUInt8(offset++);
-            console.log('Block Type: %s', BLOCK_TYPE[blockType % 128]);
+            // console.log('Block Type: %s', BLOCK_TYPE[blockType % 128]);
         
             const blockLength = content.readUIntBE(offset, 3);
             offset += 3;
+
+            if (blockType === STREAMINFO) {
+                this.streamInfo = content.slice(offset, offset + blockLength);
+            }
+
             if (blockType === 4) {
                 vorbisCommentOffset = offset;
                 vorbisCommentContent = Buffer.alloc(blockLength);
@@ -55,23 +70,23 @@ class Metaflac {
             if (blockType === 6) {
                 this.parsePictureBlock(offset, blockLength);
             }
-            console.log('Block Length: %d', blockLength);
+            // console.log('Block Length: %d', blockLength);
             offset += blockLength;
         }
         
         const vendorLength = vorbisCommentContent.readUInt32LE(0);
-        console.log('Vendor length: %d', vendorLength);
+        // console.log('Vendor length: %d', vendorLength);
         this.vendorString = vorbisCommentContent.slice(4, vendorLength + 4).toString('utf8');
-        console.log('Vendor string: %s', this.vendorString);
+        // console.log('Vendor string: %s', this.vendorString);
         const userCommentListLength = vorbisCommentContent.readUInt32LE(4 + vendorLength);
-        console.log('user_comment_list_length: %d', userCommentListLength);
+        // console.log('user_comment_list_length: %d', userCommentListLength);
         const userCommentListBuffer = vorbisCommentContent.slice(4 + vendorLength + 4);
         this.commentList = [];
         for (let offset = 0; offset < userCommentListBuffer.length; ) {
             const length = userCommentListBuffer.readUInt32LE(offset);
             offset += 4;
             const comment = userCommentListBuffer.slice(offset, offset += length).toString('utf8');
-            console.log('Comment length: %d, content: %s', length, comment);
+            // console.log('Comment length: %d, content: %s', length, comment);
             this.commentList.push(comment);
         }
         
@@ -86,39 +101,39 @@ class Metaflac {
         console.log(picture.length);
         offset = 0;
         const pictureType = picture.readUInt32BE(offset);
-        console.log('Picture type: %d', pictureType);
+        // console.log('Picture type: %d', pictureType);
         offset += 4;
         const mimeTypeLength = picture.readUInt32BE(offset);
-        console.log('Mime type length: %d', mimeTypeLength);
+        // console.log('Mime type length: %d', mimeTypeLength);
         offset += 4;
         const mimeType = picture.slice(offset, offset + mimeTypeLength).toString('ascii');
-        console.log('MIME: %s', mimeType);
+        // console.log('MIME: %s', mimeType);
         offset += mimeTypeLength;
         const descriptionLength = picture.readUInt32BE(offset);
         offset += 4;
-        console.log('The length of the description string: %d', descriptionLength);
+        // console.log('The length of the description string: %d', descriptionLength);
         const description = picture.slice(offset, offset += descriptionLength).toString('utf8');
-        console.log('The description of the picture: %s', description);
+        // console.log('The description of the picture: %s', description);
 
         const width = picture.readUInt32BE(offset);
         offset += 4;
-        console.log('The width of the picture in pixels: %d', width);
+        // console.log('The width of the picture in pixels: %d', width);
 
         const height = picture.readUInt32BE(offset);
         offset += 4;
-        console.log('The height of the picture in pixels: %d', height);
+        // console.log('The height of the picture in pixels: %d', height);
         
         const depth = picture.readUInt32BE(offset);
         offset += 4;
-        console.log('The color depth of the picture in bits-per-pixel: %d', depth);
+        // console.log('The color depth of the picture in bits-per-pixel: %d', depth);
 
         const colors = picture.readUInt32BE(offset);
         offset += 4;
-        console.log('Colors: %d', colors);
+        // console.log('Colors: %d', colors);
 
         const pictureDataLength = picture.readUInt32BE(offset);
         offset += 4;
-        console.log('The length of the picture data in bytes: %d', pictureDataLength);
+        // console.log('The length of the picture data in bytes: %d', pictureDataLength);
     }
 
     /**
@@ -132,14 +147,14 @@ class Metaflac {
      * Get the minimum block size from the STREAMINFO block.
      */
     getMinBlocksize() {
-
+        return this.streamInfo.readUInt16BE(0);
     }
 
     /**
      * Get the maximum block size from the STREAMINFO block.
      */
     getMaxBlocksize() {
-
+        return this.streamInfo.readUInt16BE(2);
     }
 
     /**
