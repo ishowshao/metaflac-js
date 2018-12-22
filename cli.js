@@ -117,11 +117,26 @@ if (program.exportTagsTo) {
         try {
             let filepath;
             if (!path.isAbsolute(program.exportTagsTo)) {
-                filepath = path.join(process.cwd(), program.exportTagsTo);
+                filepath = path.resolve(process.cwd(), program.exportTagsTo);
+            } else {
+                filepath = program.exportTagsTo;
             }
             flac.exportTagsTo(filepath);
         } catch (e) {
             console.log(`Error: ${e.message}`);
         }
+    }
+}
+if (program.importPictureFrom) {
+    try {
+        let filepath;
+        if (!path.isAbsolute(program.importPictureFrom)) {
+            filepath = path.resolve(process.cwd(), program.importPictureFrom);
+        } else {
+            filepath = program.importPictureFrom;
+        }
+        flac.importPictureFrom(filepath);
+    } catch (e) {
+        console.log(`Error: ${e.message}`);
     }
 }
