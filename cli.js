@@ -74,11 +74,44 @@ if (program.showTag) {
     console.log(flac.getTag(program.showTag));
 }
 if (program.removeTag) {
-    console.log(flac.getTag(program.showTag));
+    flac.removeTag(program.removeTag);
+    console.log(flac.getAllTags().join('\n'));
 }
-
-if (program.exportTagsTo) {
-    if (program.exportTagsTo === '-') {
+if (program.removeFirstTag) {
+    flac.removeFirstTag(program.removeFirstTag);
+    console.log(flac.getAllTags().join('\n'));
+}
+if (program.removeAllTags) {
+    flac.removeAllTags();
+    console.log(flac.getAllTags().join('\n'));
+}
+if (program.setTag) {
+    try {
+        flac.setTag(program.setTag);
         console.log(flac.getAllTags().join('\n'));
+    } catch (e) {
+        console.log(`Error: ${e.message}`);
     }
 }
+if (program.setTagFromFile) {
+    try {
+        flac.setTagFromFile(program.setTagFromFile);
+        console.log(flac.getAllTags().join('\n'));
+    } catch (e) {
+        console.log(`Error: ${e.message}`);
+    }
+}
+if (program.importTagsFrom) {
+    try {
+        flac.importTagsFrom(program.importTagsFrom);
+        console.log(flac.getAllTags().join('\n'));
+    } catch (e) {
+        console.log(`Error: ${e.message}`);
+    }
+}
+
+// if (program.exportTagsTo) {
+//     if (program.exportTagsTo === '-') {
+//         console.log(flac.getAllTags().join('\n'));
+//     }
+// }

@@ -231,7 +231,10 @@ class Metaflac {
      * @param {string} name 
      */
     removeTag(name) {
-
+        this.tags = this.tags.filter(item => {
+            const itemName = item.split('=')[0];
+            return itemName !== name;
+        });
     }
 
     /**
@@ -240,14 +243,19 @@ class Metaflac {
      * @param {string} name 
      */
     removeFirstTag(name) {
-
+        const found = this.tags.findIndex(item => {
+            return item.split('=')[0] === name;
+        });
+        if (found !== -1) {
+            this.tags.splice(found, 1);
+        }
     }
 
     /**
      * Remove all tags, leaving only the vendor string.
      */
     removeAllTags() {
-
+        this.tags = [];
     }
 
     /**
@@ -257,7 +265,10 @@ class Metaflac {
      * @param {string} field 
      */
     setTag(field) {
-
+        if (field.indexOf('=') === -1) {
+            throw new Error(`malformed vorbis comment field "${field}", field contains no '=' character`);
+        }
+        this.tags.push(field);
     }
 
     /**
@@ -266,7 +277,19 @@ class Metaflac {
      * @param {string} field 
      */
     setTagFromFile(field) {
-
+        const position = field.indexOf('=');
+        if (position === -1) {
+            throw new Error(`malformed vorbis comment field "${field}", field contains no '=' character`);
+        }
+        const name = field.substring(0, position);
+        const filename = field.substr(position + 1);
+        let value;
+        try {
+            value = fs.readFileSync(filename, 'utf8');
+        } catch (e) {
+            throw new Error(`can't open file '${filename}' for '${name}' tag value`);
+        }
+        this.tags.push(`${name}=${value}`);
     }
 
     /**
