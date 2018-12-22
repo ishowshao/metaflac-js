@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const formatVorbisComment = require('./lib/formatVorbisComment');
 
 const BLOCK_TYPE = {
@@ -309,7 +310,7 @@ class Metaflac {
      * @param {string} filename
      */
     exportTagsTo(filename) {
-
+        fs.writeFileSync(filename, this.tags.join('\n'), 'utf8');
     }
 
     /**

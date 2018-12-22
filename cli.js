@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const path = require('path');
 const program = require('commander');
 const info = require('./package.json');
 const Metaflac = require('./index');
@@ -105,6 +106,17 @@ if (program.importTagsFrom) {
     try {
         flac.importTagsFrom(program.importTagsFrom);
         console.log(flac.getAllTags().join('\n'));
+    } catch (e) {
+        console.log(`Error: ${e.message}`);
+    }
+}
+if (program.exportTagsTo) {
+    try {
+        let filepath;
+        if (!path.isAbsolute(program.exportTagsTo)) {
+            filepath = path.join(process.cwd(), program.exportTagsTo);
+        }
+        flac.exportTagsTo(filepath);
     } catch (e) {
         console.log(`Error: ${e.message}`);
     }
