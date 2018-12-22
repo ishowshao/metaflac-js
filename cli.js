@@ -32,6 +32,7 @@ program.option('--import-tags-from <FILE>', 'Import tags from a file.');
 program.option('--export-tags-to <FILE>', 'Export tags to a file. Use - for stdout. Each line will be of the form NAME=VALUE.');
 program.option('--import-picture-from <FILENAME>', 'Import a picture and store it in a PICTURE metadata block.');
 program.option('--export-picture-to <FILE>', 'Export PICTURE block to a file.');
+program.option('--list-picture', 'List all picture block info.');
 
 program.parse(process.argv);
 
@@ -136,7 +137,12 @@ if (program.importPictureFrom) {
             filepath = program.importPictureFrom;
         }
         flac.importPictureFrom(filepath);
+        flac.getPicturesSpecs().forEach(spec => console.log(spec));
     } catch (e) {
         console.log(`Error: ${e.message}`);
     }
+}
+
+if (program.listPicture) {
+    flac.getPicturesSpecs().forEach(spec => console.log(spec));
 }

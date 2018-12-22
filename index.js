@@ -32,21 +32,18 @@ class Metaflac {
         this.marker = '';
         this.streamInfo = null;
         this.vorbisComment = null;
+        this.vendorString = '';
+        this.tags = [];
         this.pictures = [];
+        this.picturesSpecs = [];
         this.init();
     }
 
     init() {
-        if (typeof this.flac === 'string') {
-            this.buffer = fs.readFileSync(this.flac);
-        } else {
-            this.buffer = flac;
-        }
+        typeof this.flac === 'string' ? this.buffer = fs.readFileSync(this.flac) : this.buffer = flac;
 
         let offset = 0;
         const marker = this.buffer.slice(0, offset += 4).toString('ascii');
-        // console.log('Marker: %s', marker);
-        
         if (marker !== 'fLaC') {
             throw new Error('Input file/buffer is not flac format.');
         }
@@ -73,7 +70,7 @@ class Metaflac {
 
             if (blockType === PICTURE) {
                 this.pictures.push(this.buffer.slice(offset, offset + blockLength));
-                this.parsePictureBlock(offset, blockLength);
+                this.parsePictureBlock();
             }
             // console.log('Block Length: %d', blockLength);
             offset += blockLength;
@@ -88,7 +85,6 @@ class Metaflac {
         const userCommentListLength = this.vorbisComment.readUInt32LE(4 + vendorLength);
         // console.log('user_comment_list_length: %d', userCommentListLength);
         const userCommentListBuffer = this.vorbisComment.slice(4 + vendorLength + 4);
-        this.tags = [];
         for (let offset = 0; offset < userCommentListBuffer.length; ) {
             const length = userCommentListBuffer.readUInt32LE(offset);
             offset += 4;
@@ -98,44 +94,42 @@ class Metaflac {
         }
     }
 
-    parsePictureBlock(offset, length) {
-        const picture = this.buffer.slice(offset, offset + length);
-        // console.log(picture.length);
-        offset = 0;
-        const pictureType = picture.readUInt32BE(offset);
-        // console.log('Picture type: %d', pictureType);
-        offset += 4;
-        const mimeTypeLength = picture.readUInt32BE(offset);
-        // console.log('Mime type length: %d', mimeTypeLength);
-        offset += 4;
-        const mimeType = picture.slice(offset, offset + mimeTypeLength).toString('ascii');
-        // console.log('MIME: %s', mimeType);
-        offset += mimeTypeLength;
-        const descriptionLength = picture.readUInt32BE(offset);
-        offset += 4;
-        // console.log('The length of the description string: %d', descriptionLength);
-        const description = picture.slice(offset, offset += descriptionLength).toString('utf8');
-        // console.log('The description of the picture: %s', description);
+    parsePictureBlock() {
+        this.pictures.forEach(picture => {
+            let offset = 0;
+            const type = picture.readUInt32BE(offset);
+            offset += 4;
+            const mimeTypeLength = picture.readUInt32BE(offset);
+            offset += 4;
+            const mime = picture.slice(offset, offset + mimeTypeLength).toString('ascii');
+            offset += mimeTypeLength;
+            const descriptionLength = picture.readUInt32BE(offset);
+            offset += 4;
+            const description = picture.slice(offset, offset += descriptionLength).toString('utf8');
+            const width = picture.readUInt32BE(offset);
+            offset += 4;
+            const height = picture.readUInt32BE(offset);
+            offset += 4;
+            const depth = picture.readUInt32BE(offset);
+            offset += 4;
+            const colors = picture.readUInt32BE(offset);
+            offset += 4;
+            const pictureDataLength = picture.readUInt32BE(offset);
+            offset += 4;
+            this.picturesSpecs.push(this.buildSpecification({
+                type,
+                mime,
+                description,
+                width,
+                height,
+                depth,
+                colors
+            }));
+        });
+    }
 
-        const width = picture.readUInt32BE(offset);
-        offset += 4;
-        // console.log('The width of the picture in pixels: %d', width);
-
-        const height = picture.readUInt32BE(offset);
-        offset += 4;
-        // console.log('The height of the picture in pixels: %d', height);
-        
-        const depth = picture.readUInt32BE(offset);
-        offset += 4;
-        // console.log('The color depth of the picture in bits-per-pixel: %d', depth);
-
-        const colors = picture.readUInt32BE(offset);
-        offset += 4;
-        // console.log('Colors: %d', colors);
-
-        const pictureDataLength = picture.readUInt32BE(offset);
-        offset += 4;
-        // console.log('The length of the picture data in bytes: %d', pictureDataLength);
+    getPicturesSpecs() {
+        return this.picturesSpecs;
     }
 
     /**
@@ -326,13 +320,14 @@ class Metaflac {
         if (mime !== 'image/jpeg') {
             throw new Error(`only support image/jpeg picture temporarily, current import ${mime}`);
         }
-        const dimensions = sizeOf(filename);
+        const dimensions = imageSize(filename);
         const spec = this.buildSpecification({
             mime: mime,
             width: dimensions.width,
             height: dimensions.height,
         });
         this.pictures.push(this.buildPictureBlock(picture, spec));
+        this.picturesSpecs.push(spec);
     }
 
     /**
