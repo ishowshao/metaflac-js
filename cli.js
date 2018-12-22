@@ -43,4 +43,27 @@ const flac = new Metaflac(file);
 if (program.showMd5sum) {
     console.log(flac.getMd5sum());
 }
-console.log(program.setTagFromFile);
+if (program.showMinBlocksize) {
+    console.log(flac.getMinBlocksize());
+}
+if (program.showMaxBlocksize) {
+    console.log(flac.getMaxBlocksize());
+}
+if (program.showMinFramesize) {
+    console.log(flac.getMinFramesize());
+}
+if (program.showMaxFramesize) {
+    console.log(flac.getMaxFramesize());
+}
+if (program.showSampleRate) {
+    console.log(flac.getSampleRate());
+}
+if (program.showChannels) {
+    console.log(flac.getChannels());
+}
+if (program.showBps) {
+    console.log(flac.getBps());
+}
+if (program.showTotalSamples) {
+    console.log(flac.getTotalSamples());
+}

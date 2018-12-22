@@ -166,42 +166,44 @@ class Metaflac {
      * Get the minimum frame size from the STREAMINFO block.
      */
     getMinFramesize() {
-
+        return this.streamInfo.readUIntBE(4, 3);
     }
 
     /**
      * Get the maximum frame size from the STREAMINFO block.
      */
     getMaxFramesize() {
-
+        return this.streamInfo.readUIntBE(7, 3);
     }
 
     /**
      * Get the sample rate from the STREAMINFO block.
      */
     getSampleRate() {
-
+        // 20 bits number
+        return this.streamInfo.readUIntBE(10, 3) >> 4;
     }
 
     /**
      * Get the number of channels from the STREAMINFO block.
      */
     getChannels() {
-
+        // 3 bits
+        return this.streamInfo.readUIntBE(10, 3) & 0x00000f >> 1;
     }
 
     /**
      * Get the # of bits per sample from the STREAMINFO block.
      */
     getBps() {
-
+        return this.streamInfo.readUIntBE(12, 2) & 0x01f0 >> 4;
     }
 
     /**
      * Get the total # of samples from the STREAMINFO block.
      */
     getTotalSamples() {
-
+        return this.streamInfo.readUIntBE(13, 5) & 0x0fffffffff;
     }
 
     /**
