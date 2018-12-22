@@ -31,11 +31,14 @@ class Metaflac {
         this.buffer = null;
         this.marker = '';
         this.streamInfo = null;
+        this.blocks = [];
+        this.padding = null;
         this.vorbisComment = null;
         this.vendorString = '';
         this.tags = [];
         this.pictures = [];
         this.picturesSpecs = [];
+        this.framesOffset = 0;
         this.init();
     }
 
@@ -63,6 +66,10 @@ class Metaflac {
                 this.streamInfo = this.buffer.slice(offset, offset + blockLength);
             }
 
+            if (blockType === PADDING) {
+                this.padding = this.buffer.slice(offset, offset + blockLength);
+            }
+
             if (blockType === VORBIS_COMMENT) {
                 this.vorbisComment = this.buffer.slice(offset, offset + blockLength);
                 this.parseVorbisComment();
@@ -72,9 +79,14 @@ class Metaflac {
                 this.pictures.push(this.buffer.slice(offset, offset + blockLength));
                 this.parsePictureBlock();
             }
+
+            if ([APPLICATION, SEEKTABLE, CUESHEET].includes(blockType)) {
+                this.blocks.push([blockType, this.buffer.slice(offset, offset + blockLength)]);
+            }
             // console.log('Block Length: %d', blockLength);
             offset += blockLength;
         }
+        this.framesOffset = offset;
     }
 
     parseVorbisComment() {
@@ -402,11 +414,44 @@ class Metaflac {
         ]);
     }
 
+    buildMetadataBlock(type, block, isLast = false) {
+        const header = Buffer.alloc(4);
+        if (isLast) {
+            type += 128;
+        }
+        header.writeUIntBE(type, 0, 1);
+        header.writeUIntBE(block.length, 1, 3);
+        return Buffer.concat(header, block);
+    }
+
+    buildMetadata() {
+        const bufferArray = [];
+        bufferArray.push(this.buildMetadataBlock(STREAMINFO, this.streamInfo));
+        this.blocks.forEach(block => {
+            bufferArray.push(this.buildMetadataBlock(...block));
+        });
+        bufferArray.push(this.buildMetadataBlock(VORBIS_COMMENT, formatVorbisComment(this.vendorString, this.tags)));
+        this.pictures.forEach(block => {
+            bufferArray.push(this.buildMetadataBlock(PICTURE, block));
+        });
+        bufferArray.push(this.buildMetadataBlock(PADDING, this.padding, true));
+        return bufferArray;
+    }
+
+    buildStream() {
+        const metadata = this.buildMetadata();
+        return [...metadata, this.buffer.slice(this.framesOffset)];
+    }
+
     /**
      * Save change to file or return changed buffer.
      */
     save() {
-
+        if (typeof this.flac === 'string') {
+            fs.writeFileSync(this.flac, Buffer.concat(this.buildStream()));
+        } else {
+            return Buffer.concat(this.buildStream());
+        }
     }
 }
 
