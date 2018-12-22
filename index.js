@@ -1,5 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const fileType = require('file-type');
+const imageSize = require('image-size');
 const formatVorbisComment = require('./lib/formatVorbisComment');
 
 const BLOCK_TYPE = {
@@ -22,12 +24,13 @@ const PICTURE = 6;
 
 class Metaflac {
     constructor(flac) {
-        this.flac = flac;
-        if (typeof this.flac !== 'string' && !Buffer.isBuffer(this.flac)) {
+        if (typeof flac !== 'string' && !Buffer.isBuffer(flac)) {
             throw new Error('Metaflac(flac) flac must be string or buffer.');
         }
-
+        this.flac = flac;
+        this.buffer = null;
         this.streamInfo = null;
+        this.pictures = [];
         this.init();
     }
 
@@ -37,7 +40,6 @@ class Metaflac {
         } else {
             this.buffer = flac;
         }
-        this.pictureBlocks = [];
 
         const content = this.buffer;
         let offset = 0;
@@ -300,7 +302,13 @@ class Metaflac {
      * @param {string} filename
      */
     importTagsFrom(filename) {
-
+        const tags = fs.readFileSync(filename, 'utf8').split('\n');
+        tags.forEach(line => {
+            if (line.indexOf('=') === -1) {
+                throw new Error(`malformed vorbis comment "${line}", contains no '=' character`);
+            }
+        });
+        this.tags = this.tags.concat(tags);
     }
 
     /**
@@ -319,7 +327,11 @@ class Metaflac {
      * @param {string} filename 
      */
     importPictureFrom(filename) {
-
+        const buffer = fs.readFileSync(filename);
+        const {mime} = fileType(buffer);
+        if (mime !== 'image/jpeg') {
+            throw new Error(`only support image/jpeg picture temporarily, current import ${mime}`);
+        }
     }
 
     /**
@@ -336,6 +348,42 @@ class Metaflac {
      */
     getAllTags() {
         return this.tags;
+    }
+
+    buildPictureBlock(picture, specification = {}) {
+        const pictureType = Buffer.alloc(4);
+        const mimeLength = Buffer.alloc(4);
+        const mime = Buffer.from(specification.mime, 'ascii');
+        const descriptionLength = Buffer.alloc(4);
+        const description = Buffer.from(specification.description, 'utf8');
+        const width = Buffer.alloc(4);
+        const height = Buffer.alloc(4);
+        const depth = Buffer.alloc(4);
+        const colors = Buffer.alloc(4);
+        const pictureLength = Buffer.alloc(4);
+
+        pictureType.writeUInt32BE(specification.type);
+        mimeLength.writeUInt32BE(specification.mime.length);
+        descriptionLength.writeUInt32BE(specification.description.length);
+        width.writeUInt32BE(specification.width);
+        height.writeUInt32BE(specification.height);
+        depth.writeUInt32BE(specification.depth);
+        colors.writeUInt32BE(specification.colors);
+        pictureLength.writeUInt32BE(picture.length);
+
+        return Buffer.concat([
+            pictureType,
+            mimeLength,
+            mime,
+            descriptionLength,
+            description,
+            width,
+            height,
+            depth,
+            colors,
+            pictureLength,
+            picture,
+        ]);
     }
 
     /**
