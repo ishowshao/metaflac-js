@@ -327,11 +327,18 @@ class Metaflac {
      * @param {string} filename 
      */
     importPictureFrom(filename) {
-        const buffer = fs.readFileSync(filename);
-        const {mime} = fileType(buffer);
+        const picture = fs.readFileSync(filename);
+        const {mime} = fileType(picture);
         if (mime !== 'image/jpeg') {
             throw new Error(`only support image/jpeg picture temporarily, current import ${mime}`);
         }
+        const dimensions = sizeOf(filename);
+        const spec = this.buildSpecification({
+            mime: mime,
+            width: dimensions.width,
+            height: dimensions.height,
+        });
+        this.pictures.push(this.buildPictureBlock(picture, spec));
     }
 
     /**
@@ -350,6 +357,26 @@ class Metaflac {
         return this.tags;
     }
 
+    buildSpecification(spec = {}) {
+        const defaults = {
+            type: 3,
+            mime: 'image/jpeg',
+            description: '',
+            width: 0,
+            height: 0,
+            depth: 24,
+            colors: 0,
+        };
+        return Object.assign(defaults, spec);
+    }
+
+    /**
+     * Build a picture block.
+     * 
+     * @param {Buffer} picture
+     * @param {Object} specification
+     * @returns {Buffer}
+     */
     buildPictureBlock(picture, specification = {}) {
         const pictureType = Buffer.alloc(4);
         const mimeLength = Buffer.alloc(4);
