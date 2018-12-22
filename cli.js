@@ -138,7 +138,8 @@ if (program.importPictureFrom) {
             filepath = program.importPictureFrom;
         }
         flac.importPictureFrom(filepath);
-        flac.getPicturesSpecs().forEach(spec => console.log(spec));
+        // flac.getPicturesSpecs().forEach(spec => console.log(spec));
+        flac.save();
     } catch (e) {
         console.log(`Error: ${e.message}`);
     }
