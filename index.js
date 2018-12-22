@@ -29,7 +29,9 @@ class Metaflac {
         }
         this.flac = flac;
         this.buffer = null;
+        this.marker = '';
         this.streamInfo = null;
+        this.vorbisComment = null;
         this.pictures = [];
         this.init();
     }
@@ -41,67 +43,59 @@ class Metaflac {
             this.buffer = flac;
         }
 
-        const content = this.buffer;
         let offset = 0;
-        const markerBuffer = content.slice(0, offset += 4);
-        const marker = markerBuffer.toString('ascii');
+        const marker = this.buffer.slice(0, offset += 4).toString('ascii');
         // console.log('Marker: %s', marker);
         
         if (marker !== 'fLaC') {
             throw new Error('Input file/buffer is not flac format.');
         }
         
-        let vorbisCommentOffset = 0;
-        let vorbisCommentContent = null;
-
         let blockType = 0;
         let isLastBlock = false;
         while (!isLastBlock) {
-            blockType = content.readUInt8(offset++);
+            blockType = this.buffer.readUInt8(offset++);
             isLastBlock = blockType > 128;
             blockType = blockType % 128;
             // console.log('Block Type: %d %s', blockType, BLOCK_TYPE[blockType]);
         
-            const blockLength = content.readUIntBE(offset, 3);
+            const blockLength = this.buffer.readUIntBE(offset, 3);
             offset += 3;
 
             if (blockType === STREAMINFO) {
-                this.streamInfo = content.slice(offset, offset + blockLength);
-                // console.log(this.streamInfo);
+                this.streamInfo = this.buffer.slice(offset, offset + blockLength);
             }
 
-            if (blockType === 4) {
-                vorbisCommentOffset = offset;
-                vorbisCommentContent = Buffer.alloc(blockLength);
-                content.copy(vorbisCommentContent, 0, offset, offset + blockLength);
+            if (blockType === VORBIS_COMMENT) {
+                this.vorbisComment = this.buffer.slice(offset, offset + blockLength);
+                this.parseVorbisComment();
             }
-            if (blockType === 6) {
+
+            if (blockType === PICTURE) {
+                this.pictures.push(this.buffer.slice(offset, offset + blockLength));
                 this.parsePictureBlock(offset, blockLength);
             }
             // console.log('Block Length: %d', blockLength);
             offset += blockLength;
         }
-        
-        const vendorLength = vorbisCommentContent.readUInt32LE(0);
+    }
+
+    parseVorbisComment() {
+        const vendorLength = this.vorbisComment.readUInt32LE(0);
         // console.log('Vendor length: %d', vendorLength);
-        this.vendorString = vorbisCommentContent.slice(4, vendorLength + 4).toString('utf8');
+        this.vendorString = this.vorbisComment.slice(4, vendorLength + 4).toString('utf8');
         // console.log('Vendor string: %s', this.vendorString);
-        const userCommentListLength = vorbisCommentContent.readUInt32LE(4 + vendorLength);
+        const userCommentListLength = this.vorbisComment.readUInt32LE(4 + vendorLength);
         // console.log('user_comment_list_length: %d', userCommentListLength);
-        const userCommentListBuffer = vorbisCommentContent.slice(4 + vendorLength + 4);
+        const userCommentListBuffer = this.vorbisComment.slice(4 + vendorLength + 4);
         this.tags = [];
         for (let offset = 0; offset < userCommentListBuffer.length; ) {
             const length = userCommentListBuffer.readUInt32LE(offset);
             offset += 4;
             const comment = userCommentListBuffer.slice(offset, offset += length).toString('utf8');
-            // console.log('Comment length: %d, content: %s', length, comment);
+            // console.log('Comment length: %d, this.buffer: %s', length, comment);
             this.tags.push(comment);
         }
-        
-        // console.log(this.vendorString, this.tags);
-        
-        // const formated = formatVorbisComment(vendorString, comments);
-        // console.log(vorbisCommentContent.equals(formated));
     }
 
     parsePictureBlock(offset, length) {
