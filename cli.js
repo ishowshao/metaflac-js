@@ -67,3 +67,18 @@ if (program.showBps) {
 if (program.showTotalSamples) {
     console.log(flac.getTotalSamples());
 }
+if (program.showVendorTag) {
+    console.log(flac.getVendorTag());
+}
+if (program.showTag) {
+    console.log(flac.getTag(program.showTag));
+}
+if (program.removeTag) {
+    console.log(flac.getTag(program.showTag));
+}
+
+if (program.exportTagsTo) {
+    if (program.exportTagsTo === '-') {
+        console.log(flac.getAllTags().join('\n'));
+    }
+}

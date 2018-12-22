@@ -86,16 +86,16 @@ class Metaflac {
         const userCommentListLength = vorbisCommentContent.readUInt32LE(4 + vendorLength);
         // console.log('user_comment_list_length: %d', userCommentListLength);
         const userCommentListBuffer = vorbisCommentContent.slice(4 + vendorLength + 4);
-        this.commentList = [];
+        this.tags = [];
         for (let offset = 0; offset < userCommentListBuffer.length; ) {
             const length = userCommentListBuffer.readUInt32LE(offset);
             offset += 4;
             const comment = userCommentListBuffer.slice(offset, offset += length).toString('utf8');
             // console.log('Comment length: %d, content: %s', length, comment);
-            this.commentList.push(comment);
+            this.tags.push(comment);
         }
         
-        // console.log(this.vendorString, this.commentList);
+        // console.log(this.vendorString, this.tags);
         
         // const formated = formatVorbisComment(vendorString, comments);
         // console.log(vorbisCommentContent.equals(formated));
@@ -219,7 +219,10 @@ class Metaflac {
      * @param {string} name 
      */
     getTag(name) {
-
+        return this.tags.filter(item => {
+            const itemName = item.split('=')[0];
+            return itemName === name;
+        }).join('\n');
     }
 
     /**
@@ -302,6 +305,13 @@ class Metaflac {
      */
     exportPictureTo(filename) {
 
+    }
+
+    /**
+     * Return all tags.
+     */
+    getAllTags() {
+        return this.tags;
     }
 
     /**
