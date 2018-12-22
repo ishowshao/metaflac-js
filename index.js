@@ -48,7 +48,7 @@ class Metaflac {
         let offset = 0;
         const marker = this.buffer.slice(0, offset += 4).toString('ascii');
         if (marker !== 'fLaC') {
-            throw new Error('Input file/buffer is not flac format.');
+            throw new Error('The file does not appear to be a FLAC file.');
         }
         
         let blockType = 0;
@@ -421,7 +421,7 @@ class Metaflac {
         }
         header.writeUIntBE(type, 0, 1);
         header.writeUIntBE(block.length, 1, 3);
-        return Buffer.concat(header, block);
+        return Buffer.concat([header, block]);
     }
 
     buildMetadata() {
@@ -440,7 +440,7 @@ class Metaflac {
 
     buildStream() {
         const metadata = this.buildMetadata();
-        return [...metadata, this.buffer.slice(this.framesOffset)];
+        return [this.buffer.slice(0, 4), ...metadata, this.buffer.slice(this.framesOffset)];
     }
 
     /**

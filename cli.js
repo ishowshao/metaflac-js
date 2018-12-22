@@ -91,6 +91,7 @@ if (program.setTag) {
     try {
         flac.setTag(program.setTag);
         console.log(flac.getAllTags().join('\n'));
+        flac.save();
     } catch (e) {
         console.log(`Error: ${e.message}`);
     }
@@ -146,3 +147,5 @@ if (program.importPictureFrom) {
 if (program.listPicture) {
     flac.getPicturesSpecs().forEach(spec => console.log(spec));
 }
+
+// flac.save();
