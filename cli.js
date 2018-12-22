@@ -111,19 +111,17 @@ if (program.importTagsFrom) {
     }
 }
 if (program.exportTagsTo) {
-    try {
-        let filepath;
-        if (!path.isAbsolute(program.exportTagsTo)) {
-            filepath = path.join(process.cwd(), program.exportTagsTo);
+    if (program.exportTagsTo === '-') {
+        console.log(flac.getAllTags().join('\n'));
+    } else {
+        try {
+            let filepath;
+            if (!path.isAbsolute(program.exportTagsTo)) {
+                filepath = path.join(process.cwd(), program.exportTagsTo);
+            }
+            flac.exportTagsTo(filepath);
+        } catch (e) {
+            console.log(`Error: ${e.message}`);
         }
-        flac.exportTagsTo(filepath);
-    } catch (e) {
-        console.log(`Error: ${e.message}`);
     }
 }
-
-// if (program.exportTagsTo) {
-//     if (program.exportTagsTo === '-') {
-//         console.log(flac.getAllTags().join('\n'));
-//     }
-// }
