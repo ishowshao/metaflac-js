@@ -2,6 +2,8 @@
 
 A pure JavaScript implementation of the metaflac (the official FLAC tool written in C++)
 
+> This is a tool that has just been completed, I hope to help you, and I hope we can optimize it together.
+
 Use as module:
 
 ```
