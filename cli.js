@@ -37,7 +37,7 @@ program.option('--list-picture', 'List all picture block info.');
 program.parse(process.argv);
 
 if (typeof file === 'undefined') {
-    console.error('ERROR: you must specify at least one FLAC file;');
+    console.error('ERROR: you must specify one FLAC file;');
     process.exit(1);
 }
 try {
