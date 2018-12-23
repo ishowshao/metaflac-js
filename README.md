@@ -1,6 +1,6 @@
 # metaflac-js
 
-A pure JavaScript implementation of the metaflac(official FLAC tools)
+A pure JavaScript implementation of the metaflac (the official FLAC tool written in C++)
 
 Use as module:
 
