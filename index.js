@@ -38,6 +38,7 @@ class Metaflac {
         this.tags = [];
         this.pictures = [];
         this.picturesSpecs = [];
+        this.picturesDatas = [];
         this.framesOffset = 0;
         this.init();
     }
@@ -128,6 +129,7 @@ class Metaflac {
             offset += 4;
             const pictureDataLength = picture.readUInt32BE(offset);
             offset += 4;
+            this.picturesDatas.push(picture.slice(offset, offset + pictureDataLength));
             this.picturesSpecs.push(this.buildSpecification({
                 type,
                 mime,
@@ -348,7 +350,9 @@ class Metaflac {
      * @param {string} filename 
      */
     exportPictureTo(filename) {
-
+        if (this.picturesDatas.length > 0) {
+            fs.writeFileSync(filename, this.picturesDatas[0]);
+        }
     }
 
     /**

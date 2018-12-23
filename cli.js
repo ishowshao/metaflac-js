@@ -40,83 +40,70 @@ if (typeof file === 'undefined') {
     console.error('ERROR: you must specify at least one FLAC file;');
     process.exit(1);
 }
-
-const flac = new Metaflac(file);
-if (program.showMd5sum) {
-    console.log(flac.getMd5sum());
-}
-if (program.showMinBlocksize) {
-    console.log(flac.getMinBlocksize());
-}
-if (program.showMaxBlocksize) {
-    console.log(flac.getMaxBlocksize());
-}
-if (program.showMinFramesize) {
-    console.log(flac.getMinFramesize());
-}
-if (program.showMaxFramesize) {
-    console.log(flac.getMaxFramesize());
-}
-if (program.showSampleRate) {
-    console.log(flac.getSampleRate());
-}
-if (program.showChannels) {
-    console.log(flac.getChannels());
-}
-if (program.showBps) {
-    console.log(flac.getBps());
-}
-if (program.showTotalSamples) {
-    console.log(flac.getTotalSamples());
-}
-if (program.showVendorTag) {
-    console.log(flac.getVendorTag());
-}
-if (program.showTag) {
-    console.log(flac.getTag(program.showTag));
-}
-if (program.removeTag) {
-    flac.removeTag(program.removeTag);
-    console.log(flac.getAllTags().join('\n'));
-}
-if (program.removeFirstTag) {
-    flac.removeFirstTag(program.removeFirstTag);
-    console.log(flac.getAllTags().join('\n'));
-}
-if (program.removeAllTags) {
-    flac.removeAllTags();
-    console.log(flac.getAllTags().join('\n'));
-}
-if (program.setTag) {
-    try {
+try {
+    const flac = new Metaflac(file);
+    if (program.showMd5sum) {
+        console.log(flac.getMd5sum());
+    }
+    if (program.showMinBlocksize) {
+        console.log(flac.getMinBlocksize());
+    }
+    if (program.showMaxBlocksize) {
+        console.log(flac.getMaxBlocksize());
+    }
+    if (program.showMinFramesize) {
+        console.log(flac.getMinFramesize());
+    }
+    if (program.showMaxFramesize) {
+        console.log(flac.getMaxFramesize());
+    }
+    if (program.showSampleRate) {
+        console.log(flac.getSampleRate());
+    }
+    if (program.showChannels) {
+        console.log(flac.getChannels());
+    }
+    if (program.showBps) {
+        console.log(flac.getBps());
+    }
+    if (program.showTotalSamples) {
+        console.log(flac.getTotalSamples());
+    }
+    if (program.showVendorTag) {
+        console.log(flac.getVendorTag());
+    }
+    if (program.showTag) {
+        console.log(flac.getTag(program.showTag));
+    }
+    if (program.removeTag) {
+        flac.removeTag(program.removeTag);
+        console.log(flac.getAllTags().join('\n'));
+    }
+    if (program.removeFirstTag) {
+        flac.removeFirstTag(program.removeFirstTag);
+        console.log(flac.getAllTags().join('\n'));
+    }
+    if (program.removeAllTags) {
+        flac.removeAllTags();
+        console.log(flac.getAllTags().join('\n'));
+    }
+    if (program.setTag) {
         flac.setTag(program.setTag);
         console.log(flac.getAllTags().join('\n'));
         flac.save();
-    } catch (e) {
-        console.log(`Error: ${e.message}`);
     }
-}
-if (program.setTagFromFile) {
-    try {
+    if (program.setTagFromFile) {
         flac.setTagFromFile(program.setTagFromFile);
         console.log(flac.getAllTags().join('\n'));
-    } catch (e) {
-        console.log(`Error: ${e.message}`);
     }
-}
-if (program.importTagsFrom) {
-    try {
+    if (program.importTagsFrom) {
         flac.importTagsFrom(program.importTagsFrom);
         console.log(flac.getAllTags().join('\n'));
-    } catch (e) {
-        console.log(`Error: ${e.message}`);
     }
-}
-if (program.exportTagsTo) {
-    if (program.exportTagsTo === '-') {
-        console.log(flac.getAllTags().join('\n'));
-    } else {
-        try {
+    if (program.exportTagsTo) {
+        if (program.exportTagsTo === '-') {
+            console.log(flac.getAllTags().join('\n'));
+        } else {
             let filepath;
             if (!path.isAbsolute(program.exportTagsTo)) {
                 filepath = path.resolve(process.cwd(), program.exportTagsTo);
@@ -124,13 +111,9 @@ if (program.exportTagsTo) {
                 filepath = program.exportTagsTo;
             }
             flac.exportTagsTo(filepath);
-        } catch (e) {
-            console.log(`Error: ${e.message}`);
         }
     }
-}
-if (program.importPictureFrom) {
-    try {
+    if (program.importPictureFrom) {
         let filepath;
         if (!path.isAbsolute(program.importPictureFrom)) {
             filepath = path.resolve(process.cwd(), program.importPictureFrom);
@@ -138,15 +121,22 @@ if (program.importPictureFrom) {
             filepath = program.importPictureFrom;
         }
         flac.importPictureFrom(filepath);
-        // flac.getPicturesSpecs().forEach(spec => console.log(spec));
         flac.save();
-    } catch (e) {
-        console.log(`Error: ${e.message}`);
     }
+    if (program.exportPictureTo) {
+        let filepath;
+        if (!path.isAbsolute(program.exportPictureTo)) {
+            filepath = path.resolve(process.cwd(), program.exportPictureTo);
+        } else {
+            filepath = program.exportPictureTo;
+        }
+        flac.exportPictureTo(filepath);
+    }
+    
+    if (program.listPicture) {
+        flac.getPicturesSpecs().forEach(spec => console.log(spec));
+    }
+} catch (e) {
+    console.log(`Error: ${e.message}`);
+    process.exit(1);
 }
-
-if (program.listPicture) {
-    flac.getPicturesSpecs().forEach(spec => console.log(spec));
-}
-
-// flac.save();
