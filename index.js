@@ -330,8 +330,8 @@ class Metaflac {
     importPictureFrom(filename) {
         const picture = fs.readFileSync(filename);
         const {mime} = fileType(picture);
-        if (mime !== 'image/jpeg') {
-            throw new Error(`only support image/jpeg picture temporarily, current import ${mime}`);
+        if (mime !== 'image/jpeg' && mime !== 'image/png') {
+            throw new Error(`only support image/jpeg and image/png picture temporarily, current import ${mime}`);
         }
         const dimensions = imageSize(filename);
         const spec = this.buildSpecification({
