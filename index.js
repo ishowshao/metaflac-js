@@ -1,5 +1,4 @@
 const fs = require('fs');
-const path = require('path');
 const fileType = require('file-type');
 const imageSize = require('image-size');
 const formatVorbisComment = require('./lib/formatVorbisComment');
