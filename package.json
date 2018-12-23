@@ -1,6 +1,6 @@
 {
   "name": "metaflac-js",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "A pure JavaScript implementation of the metaflac (official FLAC tool)",
   "main": "index.js",
   "bin": {
