@@ -43,7 +43,7 @@ class Metaflac {
     }
 
     init() {
-        typeof this.flac === 'string' ? this.buffer = fs.readFileSync(this.flac) : this.buffer = flac;
+        typeof this.flac === 'string' ? this.buffer = fs.readFileSync(this.flac) : this.buffer = this.flac;
 
         let offset = 0;
         const marker = this.buffer.slice(0, offset += 4).toString('ascii');
