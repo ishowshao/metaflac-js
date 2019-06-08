@@ -344,6 +344,26 @@ class Metaflac {
     }
 
     /**
+     * Import a picture and store it in a PICTURE metadata block.
+     * 
+     * @param {Buffer} picture
+     */
+    importPictureFromBuffer(picture) {
+        const {mime} = fileType(picture);
+        if (mime !== 'image/jpeg' && mime !== 'image/png') {
+            throw new Error(`only support image/jpeg and image/png picture temporarily, current import ${mime}`);
+        }
+        const dimensions = imageSize(picture);
+        const spec = this.buildSpecification({
+            mime: mime,
+            width: dimensions.width,
+            height: dimensions.height,
+        });
+        this.pictures.push(this.buildPictureBlock(picture, spec));
+        this.picturesSpecs.push(spec);
+    }
+
+    /**
      * Export PICTURE block to a file.
      * 
      * @param {string} filename 
