@@ -27,7 +27,7 @@
   "homepage": "https://github.com/ishowshao/metaflac-js#readme",
   "dependencies": {
     "commander": "^2.19.0",
-    "file-type": "^10.7.0",
+    "file-type": "^16.5.4",
     "image-size": "^0.6.3"
   }
 }
