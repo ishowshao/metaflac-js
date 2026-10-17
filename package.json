@@ -1,47 +1,82 @@
 {
-  "name": "metaflac-js",
-  "version": "1.1.0",
-  "description": "A pure JavaScript implementation of the metaflac (official FLAC tool)",
-  "main": "index.js",
-  "bin": {
-    "metaflac-js": "cli.js"
-  },
-  "scripts": {
-    "test": "node --test test/*.test.js",
-    "test:unit": "node --test test/unit.test.js",
-    "test:integration": "node --test test/integration.test.js",
-    "prepublishOnly": "npm test",
-    "test:package": "node scripts/test-package.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ishowshao/metaflac-js.git"
-  },
-  "keywords": [
-    "metaflac",
-    "flac",
-    "metadata",
-    "writer"
-  ],
-  "author": "ishowshao",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/ishowshao/metaflac-js/issues"
-  },
-  "homepage": "https://github.com/ishowshao/metaflac-js#readme",
-  "dependencies": {
-    "commander": "^2.19.0",
-    "image-size": "^2.0.4"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "files": [
-    "index.js",
-    "cli.js",
-    "lib/",
-    "LICENSE",
-    "CHANGELOG.md",
-    "RELEASING.md"
-  ]
+    "name": "metaflac-js",
+    "version": "2.0.0-alpha.1",
+    "description": "Typed FLAC metadata editing with lossless block preservation and bounded-memory file I/O",
+    "main": "./dist/index.js",
+    "bin": {
+        "metaflac-js": "./dist/cli.js"
+    },
+    "scripts": {
+        "build": "node scripts/build.cjs",
+        "typecheck": "tsc --noEmit",
+        "test": "npm run build && node --test test/*.test.cjs",
+        "test:unit": "npm run build && node --test test/core.test.cjs",
+        "test:integration": "npm run build && node --test test/io.test.cjs test/cli.test.cjs",
+        "test:package": "node scripts/test-package.cjs",
+        "check": "npm run format:check && npm run typecheck && npm test && npm run test:package",
+        "prepack": "npm run build",
+        "format": "prettier --write .",
+        "format:check": "prettier --check ."
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ishowshao/metaflac-js.git"
+    },
+    "keywords": [
+        "metaflac",
+        "flac",
+        "metadata",
+        "writer"
+    ],
+    "author": "ishowshao",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/ishowshao/metaflac-js/issues"
+    },
+    "homepage": "https://github.com/ishowshao/metaflac-js#readme",
+    "dependencies": {
+        "commander": "^14.0.3"
+    },
+    "engines": {
+        "node": ">=22.12"
+    },
+    "files": [
+        "dist/",
+        "LICENSE",
+        "README.md",
+        "CHANGELOG.md",
+        "MIGRATION.md",
+        "RELEASING.md",
+        "ARCHITECTURE.md"
+    ],
+    "type": "commonjs",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.js"
+        },
+        "./core": {
+            "types": "./dist/core/index.d.ts",
+            "import": "./dist/core/index.mjs",
+            "require": "./dist/core/index.js"
+        },
+        "./images": {
+            "types": "./dist/images.d.ts",
+            "import": "./dist/images.mjs",
+            "require": "./dist/images.js"
+        },
+        "./package.json": "./package.json"
+    },
+    "devDependencies": {
+        "@types/node": "^22.20.5",
+        "prettier": "^3.9.10",
+        "typescript": "~5.9.3"
+    },
+    "publishConfig": {
+        "access": "public",
+        "tag": "next"
+    }
 }

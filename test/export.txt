@@ -1,4 +1,0 @@
-ALBUM=燃烧爱情 (狼之旅)
-ARTIST=齐秦
-TITLE=大约在冬季
-TITLE=大约在冬季test

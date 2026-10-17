@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.0.0-alpha.1
+
+First preview of the TypeScript rewrite. Published under `next`; stable `latest`
+remains on 1.x. Requires Node.js 22.12+. See MIGRATION.md for breaking API/CLI changes.
+
+- Separate bounded binary codecs, metadata model, async file I/O and CLI.
+- Named ESM/CommonJS exports share one implementation and include strict types.
+- Explicit ordered multi-value tags: get/getAll, set, append, delete and iteration.
+- Preserve untouched metadata bytes, block order, padding and unknown block types;
+  no-op edits do not replace files.
+- Read only file metadata and copy audio in 1 MiB chunks during edits.
+- Support cancellation, optimistic concurrent-change detection, partial writes and
+  cleanup after failed transactions, with explicit filesystem limitations.
+- Add configurable metadata budgets and structured FlacError codes.
+- Add typed pictures, Unicode descriptions, JPEG/PNG depth/palette inspection and
+  removal/export of individual pictures. Remove image-size; the only runtime
+  dependency is Commander for the CLI.
+- Replace legacy CLI flags with info/tags/pictures subcommands and ordered repeated
+  mutation options.
+- Add official-tool interoperability, seeded round trips, injected I/O failure and
+  fresh package/type-resolution tests.
+
 ## 1.1.0
 
 Maintenance release retaining the CommonJS entry point, synchronous methods,
