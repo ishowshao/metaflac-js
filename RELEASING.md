@@ -1,4 +1,13 @@
-# Releasing
+# Releasing 1.x
+
+Work from branch `1.x`, not `master` (which develops 2.0). Backport relevant fixes
+and regression tests individually; do not merge the rewrite into this branch.
+
+Before publishing, inspect `npm view metaflac-js dist-tags --json`. While latest
+is 1.x, publish with `--tag latest`. Once latest is 2.x, **always use `--tag legacy`**
+for 1.x releases. Never move latest back to an older major. Preserve `next` for 2.x
+previews. On GitHub use `--latest=false` for 1.x releases after 2.x becomes stable.
+
 
 1. Update package.json/package-lock.json and CHANGELOG.md together. Document any
    runtime or filesystem compatibility changes explicitly.
@@ -10,7 +19,7 @@
    tag round trip and installed `metaflac-js` binary. Do not publish test fixtures.
 4. Commit the reviewed changes, push and wait for CI on that exact commit.
 5. Authenticate as an npm maintainer (`npm whoami`), then publish the validated
-   tarball with `npm publish /absolute/path/metaflac-js-X.Y.Z.tgz --access public`.
+   tarball with `npm publish /absolute/path/metaflac-js-X.Y.Z.tgz --access public --tag <latest-or-legacy>`.
    Follow npm's interactive authentication/OTP flow; never commit tokens.
 6. Verify registry version and tarball integrity. Install `metaflac-js@X.Y.Z`
    into another fresh project and repeat the package smoke test.

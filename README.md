@@ -1,5 +1,9 @@
 # metaflac-js
 
+This is the **1.x maintenance branch**. The 2.0 rewrite lives on
+[`master`](https://github.com/ishowshao/metaflac-js) and is previewed through npm `next`.
+This branch receives bug, security and necessary compatibility fixes.
+
 A pure JavaScript library and CLI for reading and editing native FLAC metadata.
 Audio frames are copied unchanged; no audio decoding or encoding is performed.
 
