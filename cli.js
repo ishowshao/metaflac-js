@@ -90,7 +90,6 @@ try {
     if (program.setTag) {
         flac.setTag(program.setTag);
         console.log(flac.getAllTags().join('\n'));
-        flac.save();
     }
     if (program.setTagFromFile) {
         flac.setTagFromFile(program.setTagFromFile);
@@ -121,7 +120,6 @@ try {
             filepath = program.importPictureFrom;
         }
         flac.importPictureFrom(filepath);
-        flac.save();
     }
     if (program.exportPictureTo) {
         let filepath;
@@ -136,7 +134,11 @@ try {
     if (program.listPicture) {
         flac.getPicturesSpecs().forEach(spec => console.log(spec));
     }
+    if (program.removeTag || program.removeFirstTag || program.removeAllTags ||
+        program.setTag || program.setTagFromFile || program.importTagsFrom || program.importPictureFrom) {
+        flac.save();
+    }
 } catch (e) {
-    console.log(`Error: ${e.message}`);
+    console.error(`Error: ${e.message}`);
     process.exit(1);
 }

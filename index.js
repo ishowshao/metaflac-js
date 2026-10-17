@@ -1,24 +1,11 @@
 const fs = require('fs');
-const fileType = require('file-type');
-const imageSize = require('image-size');
+const writeFileAtomic = require('./lib/writeFileAtomic');
+const { imageSize } = require('image-size');
 const formatVorbisComment = require('./lib/formatVorbisComment');
-
-const BLOCK_TYPE = {
-    0: 'STREAMINFO',
-    1: 'PADDING',
-    2: 'APPLICATION',
-    3: 'SEEKTABLE',
-    4: 'VORBIS_COMMENT', // There may be only one VORBIS_COMMENT block in a stream.
-    5: 'CUESHEET',
-    6: 'PICTURE',
-};
 
 const STREAMINFO = 0;
 const PADDING = 1;
-const APPLICATION = 2;
-const SEEKTABLE = 3;
 const VORBIS_COMMENT = 4;
-const CUESHEET = 5;
 const PICTURE = 6;
 
 class Metaflac {
@@ -46,97 +33,81 @@ class Metaflac {
         typeof this.flac === 'string' ? this.buffer = fs.readFileSync(this.flac) : this.buffer = this.flac;
 
         let offset = 0;
-        const marker = this.buffer.slice(0, offset += 4).toString('ascii');
-        if (marker !== 'fLaC') {
+        offset += 4;
+        if (!this.buffer.subarray(0, 4).equals(Buffer.from('fLaC'))) {
             throw new Error('The file does not appear to be a FLAC file.');
         }
         
-        let blockType = 0;
         let isLastBlock = false;
         while (!isLastBlock) {
-            blockType = this.buffer.readUInt8(offset++);
-            isLastBlock = blockType > 128;
-            blockType = blockType % 128;
-            // console.log('Block Type: %d %s', blockType, BLOCK_TYPE[blockType]);
-        
+            if (offset + 4 > this.buffer.length) {
+                throw new Error('Truncated FLAC metadata header.');
+            }
+            const header = this.buffer.readUInt8(offset++);
+            isLastBlock = (header & 0x80) !== 0;
+            const blockType = header & 0x7f;
             const blockLength = this.buffer.readUIntBE(offset, 3);
             offset += 3;
-
+            if (blockType === 127 || offset + blockLength > this.buffer.length) {
+                throw new Error('Invalid or truncated FLAC metadata block.');
+            }
+            if (!this.streamInfo && blockType !== STREAMINFO) {
+                throw new Error('STREAMINFO must be the first FLAC metadata block.');
+            }
+            const block = this.buffer.slice(offset, offset + blockLength);
             if (blockType === STREAMINFO) {
-                this.streamInfo = this.buffer.slice(offset, offset + blockLength);
-            }
-
-            if (blockType === PADDING) {
-                this.padding = this.buffer.slice(offset, offset + blockLength);
-            }
-
-            if (blockType === VORBIS_COMMENT) {
-                this.vorbisComment = this.buffer.slice(offset, offset + blockLength);
+                if (this.streamInfo || blockLength !== 34) {
+                    throw new Error('FLAC requires exactly one 34-byte STREAMINFO block.');
+                }
+                this.streamInfo = block;
+            } else if (blockType === PADDING) {
+                this.padding = block;
+            } else if (blockType === VORBIS_COMMENT) {
+                if (this.vorbisComment) {
+                    throw new Error('Duplicate VORBIS_COMMENT block.');
+                }
+                this.vorbisComment = block;
                 this.parseVorbisComment();
+            } else if (blockType === PICTURE) {
+                this.pictures.push(block);
+            } else {
+                // Preserve opaque application, seek, cue and reserved blocks.
+                this.blocks.push([blockType, block]);
             }
-
-            if (blockType === PICTURE) {
-                this.pictures.push(this.buffer.slice(offset, offset + blockLength));
-                this.parsePictureBlock();
-            }
-
-            if ([APPLICATION, SEEKTABLE, CUESHEET].includes(blockType)) {
-                this.blocks.push([blockType, this.buffer.slice(offset, offset + blockLength)]);
-            }
-            // console.log('Block Length: %d', blockLength);
             offset += blockLength;
         }
+        this.parsePictureBlock();
         this.framesOffset = offset;
     }
 
     parseVorbisComment() {
-        const vendorLength = this.vorbisComment.readUInt32LE(0);
-        // console.log('Vendor length: %d', vendorLength);
-        this.vendorString = this.vorbisComment.slice(4, vendorLength + 4).toString('utf8');
-        // console.log('Vendor string: %s', this.vendorString);
-        const userCommentListLength = this.vorbisComment.readUInt32LE(4 + vendorLength);
-        // console.log('user_comment_list_length: %d', userCommentListLength);
-        const userCommentListBuffer = this.vorbisComment.slice(4 + vendorLength + 4);
-        for (let offset = 0; offset < userCommentListBuffer.length; ) {
-            const length = userCommentListBuffer.readUInt32LE(offset);
-            offset += 4;
-            const comment = userCommentListBuffer.slice(offset, offset += length).toString('utf8');
-            // console.log('Comment length: %d, this.buffer: %s', length, comment);
-            this.tags.push(comment);
+        const reader = new MetadataReader(this.vorbisComment, 'VORBIS_COMMENT');
+        this.vendorString = reader.bytes(reader.uint32(true)).toString('utf8');
+        const count = reader.uint32(true);
+        this.tags = [];
+        for (let i = 0; i < count; i++) {
+            this.tags.push(reader.bytes(reader.uint32(true)).toString('utf8'));
         }
+        reader.end();
     }
 
     parsePictureBlock() {
+        this.picturesSpecs = [];
+        this.picturesDatas = [];
         this.pictures.forEach(picture => {
-            let offset = 0;
-            const type = picture.readUInt32BE(offset);
-            offset += 4;
-            const mimeTypeLength = picture.readUInt32BE(offset);
-            offset += 4;
-            const mime = picture.slice(offset, offset + mimeTypeLength).toString('ascii');
-            offset += mimeTypeLength;
-            const descriptionLength = picture.readUInt32BE(offset);
-            offset += 4;
-            const description = picture.slice(offset, offset += descriptionLength).toString('utf8');
-            const width = picture.readUInt32BE(offset);
-            offset += 4;
-            const height = picture.readUInt32BE(offset);
-            offset += 4;
-            const depth = picture.readUInt32BE(offset);
-            offset += 4;
-            const colors = picture.readUInt32BE(offset);
-            offset += 4;
-            const pictureDataLength = picture.readUInt32BE(offset);
-            offset += 4;
-            this.picturesDatas.push(picture.slice(offset, offset + pictureDataLength));
+            const reader = new MetadataReader(picture, 'PICTURE');
+            const type = reader.uint32();
+            const mime = reader.bytes(reader.uint32()).toString('ascii');
+            const description = reader.bytes(reader.uint32()).toString('utf8');
+            const width = reader.uint32();
+            const height = reader.uint32();
+            const depth = reader.uint32();
+            const colors = reader.uint32();
+            const data = reader.bytes(reader.uint32());
+            reader.end();
+            this.picturesDatas.push(data);
             this.picturesSpecs.push(this.buildSpecification({
-                type,
-                mime,
-                description,
-                width,
-                height,
-                depth,
-                colors
+                type, mime, description, width, height, depth, colors
             }));
         });
     }
@@ -193,21 +164,21 @@ class Metaflac {
      */
     getChannels() {
         // 3 bits
-        return this.streamInfo.readUIntBE(10, 3) & 0x00000f >> 1;
+        return ((this.streamInfo[12] >> 1) & 7) + 1;
     }
 
     /**
      * Get the # of bits per sample from the STREAMINFO block.
      */
     getBps() {
-        return this.streamInfo.readUIntBE(12, 2) & 0x01f0 >> 4;
+        return ((this.streamInfo.readUInt16BE(12) >> 4) & 31) + 1;
     }
 
     /**
      * Get the total # of samples from the STREAMINFO block.
      */
     getTotalSamples() {
-        return this.streamInfo.readUIntBE(13, 5) & 0x0fffffffff;
+        return (this.streamInfo[13] & 15) * 0x100000000 + this.streamInfo.readUInt32BE(14);
     }
 
     /**
@@ -225,7 +196,7 @@ class Metaflac {
     getTag(name) {
         return this.tags.filter(item => {
             const itemName = item.split('=')[0];
-            return itemName === name;
+            return itemName.toUpperCase() === name.toUpperCase();
         }).join('\n');
     }
 
@@ -237,7 +208,7 @@ class Metaflac {
     removeTag(name) {
         this.tags = this.tags.filter(item => {
             const itemName = item.split('=')[0];
-            return itemName !== name;
+            return itemName.toUpperCase() !== name.toUpperCase();
         });
     }
 
@@ -248,7 +219,7 @@ class Metaflac {
      */
     removeFirstTag(name) {
         const found = this.tags.findIndex(item => {
-            return item.split('=')[0] === name;
+            return item.split('=')[0].toUpperCase() === name.toUpperCase();
         });
         if (found !== -1) {
             this.tags.splice(found, 1);
@@ -269,9 +240,7 @@ class Metaflac {
      * @param {string} field 
      */
     setTag(field) {
-        if (field.indexOf('=') === -1) {
-            throw new Error(`malformed vorbis comment field "${field}", field contains no '=' character`);
-        }
+        validateTag(field);
         this.tags.push(field);
     }
 
@@ -293,7 +262,7 @@ class Metaflac {
         } catch (e) {
             throw new Error(`can't open file '${filename}' for '${name}' tag value`);
         }
-        this.tags.push(`${name}=${value}`);
+        this.setTag(`${name}=${value}`);
     }
 
     /**
@@ -303,12 +272,8 @@ class Metaflac {
      * @param {string} filename
      */
     importTagsFrom(filename) {
-        const tags = fs.readFileSync(filename, 'utf8').split('\n');
-        tags.forEach(line => {
-            if (line.indexOf('=') === -1) {
-                throw new Error(`malformed vorbis comment "${line}", contains no '=' character`);
-            }
-        });
+        const tags = fs.readFileSync(filename, 'utf8').split(/\r?\n/).filter(line => line.length > 0);
+        tags.forEach(validateTag);
         this.tags = this.tags.concat(tags);
     }
 
@@ -328,19 +293,7 @@ class Metaflac {
      * @param {string} filename 
      */
     importPictureFrom(filename) {
-        const picture = fs.readFileSync(filename);
-        const {mime} = fileType(picture);
-        if (mime !== 'image/jpeg' && mime !== 'image/png') {
-            throw new Error(`only support image/jpeg and image/png picture temporarily, current import ${mime}`);
-        }
-        const dimensions = imageSize(filename);
-        const spec = this.buildSpecification({
-            mime: mime,
-            width: dimensions.width,
-            height: dimensions.height,
-        });
-        this.pictures.push(this.buildPictureBlock(picture, spec));
-        this.picturesSpecs.push(spec);
+        this.importPictureFromBuffer(fs.readFileSync(filename));
     }
 
     /**
@@ -349,9 +302,17 @@ class Metaflac {
      * @param {Buffer} picture
      */
     importPictureFromBuffer(picture) {
-        const {mime} = fileType(picture);
-        if (mime !== 'image/jpeg' && mime !== 'image/png') {
-            throw new Error(`only support image/jpeg and image/png picture temporarily, current import ${mime}`);
+        if (!Buffer.isBuffer(picture)) {
+            throw new TypeError('Picture must be a Buffer.');
+        }
+        // Only inspect formats accepted by this API, before invoking the decoder.
+        let mime;
+        if (picture.length >= 8 && picture.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))) {
+            mime = 'image/png';
+        } else if (picture.length >= 3 && picture[0] === 0xff && picture[1] === 0xd8 && picture[2] === 0xff) {
+            mime = 'image/jpeg';
+        } else {
+            throw new Error('Only JPEG and PNG pictures are supported.');
         }
         const dimensions = imageSize(picture);
         const spec = this.buildSpecification({
@@ -360,7 +321,7 @@ class Metaflac {
             height: dimensions.height,
         });
         this.pictures.push(this.buildPictureBlock(picture, spec));
-        this.picturesSpecs.push(spec);
+        this.parsePictureBlock();
     }
 
     /**
@@ -414,8 +375,8 @@ class Metaflac {
         const pictureLength = Buffer.alloc(4);
 
         pictureType.writeUInt32BE(specification.type);
-        mimeLength.writeUInt32BE(specification.mime.length);
-        descriptionLength.writeUInt32BE(specification.description.length);
+        mimeLength.writeUInt32BE(mime.length);
+        descriptionLength.writeUInt32BE(description.length);
         width.writeUInt32BE(specification.width);
         height.writeUInt32BE(specification.height);
         depth.writeUInt32BE(specification.depth);
@@ -438,6 +399,9 @@ class Metaflac {
     }
 
     buildMetadataBlock(type, block, isLast = false) {
+        if (!Number.isInteger(type) || type < 0 || type > 126 || !Buffer.isBuffer(block) || block.length > 0xffffff) {
+            throw new Error('Invalid FLAC metadata type or length (maximum 16777215 bytes).');
+        }
         const header = Buffer.alloc(4);
         if (isLast) {
             type += 128;
@@ -457,7 +421,7 @@ class Metaflac {
         this.pictures.forEach(block => {
             bufferArray.push(this.buildMetadataBlock(PICTURE, block));
         });
-        bufferArray.push(this.buildMetadataBlock(PADDING, this.padding, true));
+        bufferArray.push(this.buildMetadataBlock(PADDING, this.padding || Buffer.alloc(0), true));
         return bufferArray;
     }
 
@@ -471,9 +435,43 @@ class Metaflac {
      */
     save() {
         if (typeof this.flac === 'string') {
-            fs.writeFileSync(this.flac, Buffer.concat(this.buildStream()));
+            writeFileAtomic(this.flac, Buffer.concat(this.buildStream()));
         } else {
             return Buffer.concat(this.buildStream());
+        }
+    }
+}
+
+function validateTag(field) {
+    if (typeof field !== 'string' || !/^[\x20-\x3c\x3e-\x7e]+=/.test(field)) {
+        throw new Error('Malformed Vorbis comment: expected a printable ASCII NAME=VALUE field.');
+    }
+}
+
+class MetadataReader {
+    constructor(buffer, label) {
+        this.buffer = buffer;
+        this.label = label;
+        this.offset = 0;
+    }
+
+    bytes(length) {
+        if (length > this.buffer.length - this.offset) {
+            throw new Error(`Truncated ${this.label} block.`);
+        }
+        const bytes = this.buffer.subarray(this.offset, this.offset + length);
+        this.offset += length;
+        return bytes;
+    }
+
+    uint32(littleEndian = false) {
+        const bytes = this.bytes(4);
+        return littleEndian ? bytes.readUInt32LE(0) : bytes.readUInt32BE(0);
+    }
+
+    end() {
+        if (this.offset !== this.buffer.length) {
+            throw new Error(`Unexpected trailing data in ${this.label} block.`);
         }
     }
 }
